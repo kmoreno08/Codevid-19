@@ -101,10 +101,21 @@ const update = (data) => {
 };
 
 // data from CSV
+let US_state_data = [];
 d3.csv(
   "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/04-04-2020.csv"
-).then(function (data) {
-  console.log(data[0]);
+).then(function (d) {
+  // Loop through array
+  for (var i = 0; i < d.length; i++) {
+    if (d[i].Country_Region == "US") {
+      US__state_data.push({
+        Province_State: d[i].Province_State,
+        Confirmed: d[i].Confirmed,
+        Deaths: d[i].Deaths,
+      });
+    } else {
+    }
+  }
 });
 
 //on first load make transition animation
