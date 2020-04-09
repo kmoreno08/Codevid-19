@@ -15,7 +15,7 @@ const graph = svg
 const pie = d3
   .pie()
   .sort(null)
-  .value((d) => d.cost);
+  .value((d) => d.value);
 // the value we are evaluating to create the pie angles
 
 const arcPath = d3
@@ -40,9 +40,10 @@ const tip = d3
   .tip()
   .attr("class", "tip")
   .html((d) => {
-    let content = `<div class="name">${d.data.name}</div>`;
-    content += `<div class="cost">${d.data.cost}</div>`;
-    content += `<div class="delete">Click slice to delete</div>`;
+    let content = `<div class="state">${d.data.state}</div>`;
+    content += `<div class="valueStatement">${d.data.valueStatement}</div>`;
+    content += `<div class="mortality">${d.data.mortality}</div>`;
+    // content += `<div class="delete">Click slice to delete</div>`;
     return content;
   });
 
@@ -53,6 +54,8 @@ const update = (data) => {
   // update color scale domiain
   color.domain(data.map((d) => d.name));
 
+  console.log(currentStateArray);
+
   // update and call legend
   legendGroup.call(legend);
   legendGroup.selectAll("text").attr("fill", "white");
@@ -61,7 +64,12 @@ const update = (data) => {
   const paths = graph.selectAll("path").data(pie(data));
 
   // remove unwanted shapes from the exit selection
-  paths.exit().transition().duration(750).attrTween("d", arcTweenExit).remove();
+  paths
+    .exit()
+    .transition()
+    .duration(1000)
+    .attrTween("d", arcTweenExit)
+    .remove();
   /// handle the current DOM path updates
   paths
     .attr("d", arcPath)
@@ -81,7 +89,7 @@ const update = (data) => {
       this._current = d;
     })
     .transition()
-    .duration(750)
+    .duration(1500)
     .attrTween("d", arcTweenEnter);
 
   // add events
@@ -103,7 +111,7 @@ const update = (data) => {
 // data from CSV
 let US_state_data = [];
 d3.csv(
-  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/04-06-2020.csv"
+  "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/04-08-2020.csv"
 ).then(function (d) {
   // Loop through array
   for (var i = 0; i < d.length; i++) {
@@ -118,6 +126,69 @@ d3.csv(
   }
 });
 
+let currentStateArray = [];
+let confirmedCases = 0;
+let deathCounter = 0;
+// when click on submit form
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  // check if state name is in database
+  if (name.value) {
+    currentStateArray = [];
+    confirmedCases = 0;
+    deathCounter = 0;
+    // Loop through data
+    for (let i = 0; i < US_state_data.length; i++) {
+      // Grab state name through each array object
+      let stateCheck = US_state_data[i].Province_State;
+      // if  user input equals state name in data then save data
+      if (name.value.toLowerCase() == stateCheck.toLowerCase()) {
+        let tempCases = +US_state_data[i].Confirmed;
+        let tempDeaths = +US_state_data[i].Deaths;
+        confirmedCases += parseFloat(tempCases);
+        deathCounter += parseFloat(tempDeaths);
+        error.textContent = "Worked";
+      } else {
+        error.textContent =
+          "Mortality rate  = " +
+          parseFloat((deathCounter / confirmedCases) * 100).toFixed(2) +
+          "%";
+      }
+    }
+  } else {
+    error.textContent = "Outside else";
+  }
+
+  // mortality rate percentage
+  let mortalityRatePerc = parseFloat(
+    (deathCounter / confirmedCases) * 100
+  ).toFixed(2);
+
+  //console.log(mortalityRatePerc);
+
+  // push objects to array
+  stateConfirmedCases = {
+    name: "Total cases",
+    state: name.value + "'s Statistics:",
+    value: confirmedCases,
+    valueStatement: "Confirmed Cases: " + confirmedCases,
+    mortality: mortalityRatePerc + "% death rate",
+  };
+  stateDeaths = {
+    name: "Total deaths",
+    state: name.value + "'s Statistics:",
+    value: deathCounter,
+    valueStatement: "Confirmed Deaths: " + deathCounter,
+    mortality: mortalityRatePerc + "% death rate",
+  };
+
+  currentStateArray.push(stateConfirmedCases);
+  currentStateArray.push(stateDeaths);
+
+  //call the update function
+  update(currentStateArray);
+});
 //on first load make transition animation
 const arcTweenEnter = (d) => {
   var i = d3.interpolate(d.endAngle, d.startAngle);
@@ -155,14 +226,14 @@ const handleMouseOver = (d, i, n) => {
   d3.select(n[i])
     // does not stop after reloading. make sure that it fills
     .transition("changeSliceFill")
-    .duration(300)
-    .attr("fill", "#fff");
+    .duration(600)
+    .attr("fill", "#343434");
 };
 
 const handleMouseOut = (d, i, n) => {
   d3.select(n[i])
     .transition("changeSliceFill")
-    .duration(300)
+    .duration(400)
     .attr("fill", color(d.data.name));
 };
 
